@@ -1,15 +1,8 @@
-use std::fs::File;
 use std::path::PathBuf;
 use std::sync::{Condvar, Mutex};
 
 fn get_image_bytes(path: &PathBuf) -> Vec<u8> {
-    let file = File::open(path).unwrap();
-    let decoder = png::Decoder::new(file);
-    let mut reader = decoder.read_info().unwrap();
-
-    let mut buf = vec![0; reader.output_buffer_size()];
-    reader.next_frame(&mut buf).unwrap();
-    buf
+    image::open(path).unwrap().as_bytes().to_vec()
 }
 
 pub struct Entry {
@@ -40,12 +33,13 @@ impl Entry {
     }
 
     pub fn load(self: &Entry) {
+        let mut file = self.data.lock().unwrap();
+        *file = Some(Box::new(get_image_bytes(&self.path)));
+
         let mut opt = self.ready.lock().unwrap();
         *opt = true;
 
-        let mut file = self.data.lock().unwrap();
-        *file = Some(Box::new(get_image_bytes(&self.path)));
-        self.cvar.notify_one();
+        self.cvar.notify_all();
     }
 }
 

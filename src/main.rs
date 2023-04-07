@@ -1,10 +1,10 @@
-mod gif_progress;
 mod entry;
+mod gif_progress;
 mod seamless_fast;
 
-use std::ffi::OsStr;
-use clap::{arg, Parser, Subcommand};
 use crate::seamless_fast::seamless_fast;
+use clap::{arg, Parser, Subcommand};
+use std::ffi::OsStr;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None, arg_required_else_help = true)]
@@ -36,16 +36,28 @@ enum Commands {
         /// Output gif file
         #[arg(short, long, default_value = "output.gif")]
         output: String,
-    }
+    },
 }
 
 fn main() {
     let cli = Cli::parse();
 
     match cli.command {
-        Some(Commands::Fast { path, extension, duration_importance, quality, output }) => {
-            seamless_fast(path, OsStr::new(extension.as_str()), duration_importance, quality, output);
-        }
         None => {}
+        Some(Commands::Fast {
+            path,
+            extension,
+            duration_importance,
+            quality,
+            output,
+        }) => {
+            seamless_fast(
+                path,
+                OsStr::new(extension.as_str()),
+                duration_importance,
+                quality,
+                output,
+            );
+        }
     }
 }
