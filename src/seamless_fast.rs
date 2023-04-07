@@ -1,13 +1,13 @@
+use crate::entry::Entry;
+use crate::gif_progress::{create_style, GifProgress};
+use gifski::progress::ProgressReporter;
+use gifski::{Repeat, Settings};
+use indicatif::{MultiProgress, ProgressBar};
+use rayon::prelude::*;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
-use gifski::{Repeat, Settings};
-use gifski::progress::ProgressReporter;
-use indicatif::{MultiProgress, ProgressBar};
-use rayon::prelude::*;
-use crate::entry::Entry;
-use crate::gif_progress::{create_style, GifProgress};
 
 // Normalized euclidean distance
 // Thanks ChatGPT
@@ -27,7 +27,13 @@ struct SimilarityScore {
     score: f32,
 }
 
-pub fn seamless_fast(input_path: String, extension: &OsStr, duration_importance: f32, quality: u8, output_path: String) {
+pub fn seamless_fast(
+    input_path: String,
+    extension: &OsStr,
+    duration_importance: f32,
+    quality: u8,
+    output_path: String,
+) {
     let progress_style = create_style();
     let mut indexing_progress = GifProgress::new(1, String::from("indexing"), 1);
 
@@ -47,7 +53,8 @@ pub fn seamless_fast(input_path: String, extension: &OsStr, duration_importance:
 
     indexing_progress.done(&*format!("indexed {} files", paths.len()));
 
-    let input = paths.iter()
+    let input = paths
+        .iter()
         .map(|path| {
             Arc::new(Entry {
                 path: Box::new(path.clone()),
@@ -62,20 +69,31 @@ pub fn seamless_fast(input_path: String, extension: &OsStr, duration_importance:
     let files_b = files.clone();
 
     let m = MultiProgress::new();
-    let loading_files_progress = Arc::new(Mutex::new(GifProgress::multi(&m, 2, String::from("loading files"), length as u64)));
+    let loading_files_progress = Arc::new(Mutex::new(GifProgress::multi(
+        &m,
+        2,
+        String::from("loading files"),
+        length as u64,
+    )));
 
     let load_files_thread = std::thread::spawn(move || {
-        files_b
-            .par_iter()
-            .for_each(|element| {
-                loading_files_progress.lock().unwrap().increase();
-                element.load();
-            });
+        files_b.par_iter().for_each(|element| {
+            element.load();
+            loading_files_progress.lock().unwrap().increase();
+        });
 
-        loading_files_progress.lock().unwrap().done(&*format!("loaded {} files", length));
+        loading_files_progress
+            .lock()
+            .unwrap()
+            .done(&*format!("loaded {} files", length));
     });
 
-    let diff_pb = Arc::new(Mutex::new(GifProgress::multi(&m, 3, String::from("finding matching frames"), length as u64)));
+    let diff_pb = Arc::new(Mutex::new(GifProgress::multi(
+        &m,
+        3,
+        String::from("finding matching frames"),
+        length as u64,
+    )));
 
     // TODO: Compare on GPU
     // TODO: Start while loading files
@@ -111,7 +129,8 @@ pub fn seamless_fast(input_path: String, extension: &OsStr, duration_importance:
 
                 // TODO: Update this formula
                 let distance = ((j as f32 - i as f32) / length as f32).sqrt();
-                let score = distance * duration_importance + difference * (1.0 - duration_importance);
+                let score =
+                    distance * duration_importance + difference * (1.0 - duration_importance);
 
                 if score > best_score {
                     best_difference = difference;
@@ -146,19 +165,22 @@ pub fn seamless_fast(input_path: String, extension: &OsStr, duration_importance:
     let (collector, writer) = gifski::new(Settings {
         width: None,
         height: None,
-        quality: quality,
+        quality,
         fast: false,
         repeat: Repeat::Infinite,
-    }).unwrap();
+    })
+    .unwrap();
 
-    let m = MultiProgress::new();
-    let mut collect_files_progress = GifProgress::multi(&m, 4, String::from("collecting frames"), frame_count);
+    let mut collect_files_progress =
+        GifProgress::multi(&m, 4, String::from("collecting frames"), frame_count);
 
     let t = std::thread::spawn(move || {
         for i in start..end {
             collect_files_progress.increase();
             let path = &paths[i];
-            collector.add_frame_png_file(i, path.to_path_buf(), fps * i as f64).unwrap();
+            collector
+                .add_frame_png_file(i, path.to_path_buf(), fps * (i - start) as f64)
+                .unwrap();
         }
 
         collect_files_progress.done(&*format!("collected {} frames", frame_count));
