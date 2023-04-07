@@ -3,7 +3,8 @@ use std::path::PathBuf;
 use std::sync::{Condvar, Mutex};
 
 fn get_image_bytes(path: &PathBuf) -> Vec<u8> {
-    let decoder = png::Decoder::new(File::open(path).unwrap());
+    let file = File::open(path).unwrap();
+    let decoder = png::Decoder::new(file);
     let mut reader = decoder.read_info().unwrap();
 
     let mut buf = vec![0; reader.output_buffer_size()];
