@@ -1,16 +1,17 @@
 mod gif_progress;
+mod entry;
 
 use std::ffi::OsStr;
 use std::fmt::Debug;
 use std::fs;
 use std::fs::File;
-use std::path::PathBuf;
-use std::sync::{Arc, Condvar, Mutex};
+use std::sync::{Arc, Mutex};
 use clap::Parser;
 use gifski::{Repeat, Settings};
 use gifski::progress::ProgressReporter;
 use indicatif::{MultiProgress, ProgressBar};
 use rayon::prelude::*;
+use crate::entry::Entry;
 use crate::gif_progress::{create_style, GifProgress};
 
 #[derive(Parser, Debug)]
@@ -26,15 +27,6 @@ struct Args {
     quality: u8,
     #[arg(short, long, default_value = "output.gif")]
     output: String,
-}
-
-fn get_image_bytes(path: &PathBuf) -> Vec<u8> {
-    let decoder = png::Decoder::new(File::open(path).unwrap());
-    let mut reader = decoder.read_info().unwrap();
-
-    let mut buf = vec![0; reader.output_buffer_size()];
-    reader.next_frame(&mut buf).unwrap();
-    buf
 }
 
 // Normalized euclidean distance
@@ -53,43 +45,6 @@ struct SimilarityScore {
     end: usize,
     similarity: f32,
     score: f32,
-}
-
-struct Data(Vec<u8>);
-
-struct Entry {
-    path: Box<PathBuf>,
-    ready: Mutex<bool>,
-    cvar: Condvar,
-    data: Mutex<Option<Box<Vec<u8>>>>,
-}
-
-impl Entry {
-    fn wait_ready(self: &Entry) -> &Entry {
-        let mut opt = self.ready.lock().unwrap();
-
-        while !*opt {
-            opt = self.cvar.wait(opt).unwrap();
-        }
-
-        self
-    }
-
-    fn get_data(self: &Entry) -> Option<Vec<u8>> {
-        let locked_value = self.data.lock().unwrap();
-
-        match &*locked_value {
-            Some(boxed_vec) => Some((**boxed_vec).clone()),
-            None => None,
-        }
-    }
-}
-
-fn read(element: &Entry) {
-    let mut opt = element.ready.lock().unwrap();
-    while !*opt {
-        opt = element.cvar.wait(opt).unwrap();
-    }
 }
 
 fn main() {
@@ -115,36 +70,34 @@ fn main() {
 
     indexing_progress.done(&*format!("indexed {} files", paths.len()));
 
-    let loading_files_progress = Arc::new(Mutex::new(GifProgress::new(2, String::from("loading files"), paths.len() as u64)));
-
-    let files = paths.iter()
+    let input = paths.iter()
         .map(|path| {
             Arc::new(Entry {
                 path: Box::new(path.clone()),
-                ready: Mutex::new(false),
-                cvar: Condvar::new(),
-                data: Mutex::new(None),
+                ..Entry::default()
             })
         })
         .collect::<Vec<_>>();
 
-    let _ = files.par_iter()
-        .for_each(|element| {
-            loading_files_progress.lock().unwrap().increase();
-
-            let mut opt = element.ready.lock().unwrap();
-            *opt = true;
-
-            let mut file = element.data.lock().unwrap();
-            *file = Some(Box::new(get_image_bytes(&element.path)));
-            element.cvar.notify_one();
-        });
-
-    loading_files_progress.lock().unwrap().done(&*format!("loaded {} files", paths.len()));
-
+    let files = Arc::new(input);
     let length = paths.len();
 
+    let files_b = files.clone();
+
     let m = MultiProgress::new();
+    let loading_files_progress = Arc::new(Mutex::new(GifProgress::multi(&m, 2, String::from("loading files"), length as u64)));
+
+    let load_files_thread = std::thread::spawn(move || {
+        files_b
+            .par_iter()
+            .for_each(|element| {
+                loading_files_progress.lock().unwrap().increase();
+                element.load();
+            });
+
+        loading_files_progress.lock().unwrap().done(&*format!("loaded {} files", length));
+    });
+
     let diff_pb = Arc::new(Mutex::new(GifProgress::multi(&m, 3, String::from("finding matching frames"), length as u64)));
 
     // TODO: Compare on GPU
@@ -153,10 +106,11 @@ fn main() {
         .par_iter()
         .enumerate()
         .map(|(i, element)| {
-            let bytes_a = element.wait_ready().get_data().unwrap();
-
             let pb = m.add(ProgressBar::new((length - i) as u64));
             pb.set_style(progress_style.clone());
+
+            pb.set_message(format!("comparing {} (waiting)", i));
+            let bytes_a = element.wait_ready().get_data().unwrap();
 
             diff_pb.lock().unwrap().increase();
 
@@ -165,7 +119,7 @@ fn main() {
             let mut best_score: f32 = 0.0;
 
             for j in (i + 1)..length {
-                pb.set_message(format!("comparing {} and {}", i, j));
+                pb.set_message(format!("comparing {} and {} (waiting)", i, j));
                 pb.inc(1);
 
                 let bytes_b = files[j].wait_ready().get_data().unwrap();
@@ -173,6 +127,8 @@ fn main() {
                 if bytes_b.len() != bytes_a.len() {
                     continue;
                 }
+
+                pb.set_message(format!("comparing {} and {}", i, j));
 
                 let difference = similarity(&bytes_a, &bytes_b);
 
@@ -197,6 +153,8 @@ fn main() {
             }
         })
         .collect::<Vec<_>>();
+
+    load_files_thread.join().unwrap();
 
     matches.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap());
 

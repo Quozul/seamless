@@ -4,7 +4,7 @@ use gifski::progress::ProgressReporter;
 use indicatif::{HumanDuration, MultiProgress, ProgressBar, ProgressStyle};
 
 pub struct GifProgress {
-	pb: ProgressBar,
+	pub pb: ProgressBar,
 	start: Instant,
 }
 
