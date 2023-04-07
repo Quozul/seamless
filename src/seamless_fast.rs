@@ -1,5 +1,6 @@
 use crate::entry::Entry;
 use crate::gif_progress::{create_style, GifProgress};
+use crate::similarity::similarity;
 use gifski::progress::ProgressReporter;
 use gifski::{Repeat, Settings};
 use indicatif::{MultiProgress, ProgressBar};
@@ -8,17 +9,6 @@ use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
 use std::sync::{Arc, Mutex};
-
-// Normalized euclidean distance
-// Thanks ChatGPT
-fn similarity(a: &[u8], b: &[u8]) -> f32 {
-    let mut sum = 0.0;
-    for i in 0..a.len() {
-        let diff = (a[i] as f32 - b[i] as f32) / 255.0;
-        sum += diff * diff;
-    }
-    1.0 - (sum / a.len() as f32).sqrt()
-}
 
 struct SimilarityScore {
     start: usize,

@@ -1,7 +1,10 @@
 mod entry;
+mod gaussian;
 mod gif_progress;
 mod seamless_fast;
+mod similarity;
 
+use crate::gaussian::gaussian;
 use crate::seamless_fast::seamless_fast;
 use clap::{arg, Parser, Subcommand};
 use std::ffi::OsStr;
@@ -37,6 +40,9 @@ enum Commands {
         #[arg(short, long, default_value = "output.gif")]
         output: String,
     },
+
+    /// Blurs the image using gaussian blur
+    Gaussian { input: String },
 }
 
 fn main() {
@@ -58,6 +64,9 @@ fn main() {
                 quality,
                 output,
             );
+        }
+        Some(Commands::Gaussian { input }) => {
+            gaussian(input);
         }
     }
 }
