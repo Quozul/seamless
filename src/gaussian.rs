@@ -8,12 +8,14 @@ pub fn gaussian(input: String, size: u32, sigma: f32, output_path: PathBuf) {
 
     let kernel = gaussian_kernel(size, sigma);
 
+    // This is a good enough optimization since this algorithm does not blurs the edges of the image
+    let weight_acc = kernel.iter().flatten().fold(0.0, |acc, &x| acc + x);
+
     let half = size as i32 / 2;
 
     for y in half..img.height() as i32 - half {
         for x in half..img.width() as i32 - half {
             let mut acc = [0.0; 4];
-            let mut weight_acc = 0.0;
 
             for j in -half..half {
                 for i in -half..half {
@@ -25,19 +27,13 @@ pub fn gaussian(input: String, size: u32, sigma: f32, output_path: PathBuf) {
                     for c in 0..4 {
                         acc[c] += pixel[c] as f32 * kernel_weight;
                     }
-
-                    weight_acc += kernel_weight;
                 }
-            }
-
-            for c in 0..4 {
-                acc[c] /= weight_acc;
             }
 
             output.put_pixel(
                 x as u32,
                 y as u32,
-                Rgba::from(acc.map(|color| color.round() as u8)),
+                Rgba::from(acc.map(|color| (color / weight_acc).round() as u8)),
             );
         }
     }
