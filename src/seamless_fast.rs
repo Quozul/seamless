@@ -8,6 +8,7 @@ use rayon::prelude::*;
 use std::ffi::OsStr;
 use std::fs;
 use std::fs::File;
+use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 struct SimilarityScore {
@@ -18,7 +19,7 @@ struct SimilarityScore {
 }
 
 pub fn seamless_fast(
-    input_path: String,
+    input_path: PathBuf,
     extension: &OsStr,
     duration_importance: f32,
     quality: u8,
@@ -47,7 +48,7 @@ pub fn seamless_fast(
         .iter()
         .map(|path| {
             Arc::new(Entry {
-                path: Box::new(path.clone()),
+                path: path.clone(),
                 ..Entry::default()
             })
         })

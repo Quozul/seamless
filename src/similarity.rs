@@ -20,6 +20,8 @@ mod tests {
     fn test_similarity() {
         assert_eq!(similarity(&[255, 255], &[0, 0]), 0.0);
         assert_eq!(similarity(&[255, 255], &[255, 255]), 1.0);
-        // assert_eq!(similarity(&[255, 255], &[128, 127]), 0.5);
+
+        let test = similarity(&[255, 255], &[128, 127]) * 10.0;
+        assert_eq!(test.round(), 5.0);
     }
 }

@@ -29,3 +29,12 @@ ffmpeg -i video.mp4 frame%04d.png
 # Find 2 frames that loops and generates a gif named `my_gif.gif`
 seamless fast -e=png -o=my_gif.gif .
 ```
+
+### Gaussian blur
+
+```shell
+seamless gaussian --radius=1 --sigma=1.5 --output=blured_image.png image.png
+
+# Or shorter
+seamless gaussian -r1 -s1.5 -o blured_image.png image.png
+```
