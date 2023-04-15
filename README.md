@@ -4,7 +4,13 @@ Create seamlessly looping gifs from the command line.
 
 ## Demo
 
-`TODO: Add a demo`
+Here is an example using a scene from the _Non Non Biyori_ anime.
+
+
+
+https://user-images.githubusercontent.com/30729291/232242390-5da6e9fe-3a83-48e8-9cfc-5247476fe5de.mp4
+
+
 
 ## Installation
 
