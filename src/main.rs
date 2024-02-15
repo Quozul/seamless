@@ -1,9 +1,11 @@
+mod borders;
 mod entry;
 mod gaussian;
 mod gif_progress;
 mod seamless_fast;
 mod similarity;
 
+use crate::borders::borders;
 use crate::entry::get_image_bytes;
 use crate::gaussian::gaussian;
 use crate::seamless_fast::seamless_fast;
@@ -90,6 +92,9 @@ enum Commands {
         #[arg(long, short, default_value = "output.png")]
         output: PathBuf,
     },
+
+    /// Gives the average color of the first and last rows
+    Borders { input: String },
 }
 
 fn main() {
@@ -134,6 +139,9 @@ fn main() {
             output,
         }) => {
             gaussian(input, radius * 2, sigma, output);
+        }
+        Some(Commands::Borders { input }) => {
+            borders(input);
         }
     }
 }
