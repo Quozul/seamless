@@ -4,18 +4,16 @@ version = "0.1.0"
 edition = "2021"
 authors = ["Quozul"]
 
-# Enable a small amount of optimization in debug mode
 [profile.dev]
 opt-level = 1
 
-# Enable high optimizations for dependencies, but not for our code:
 [profile.dev.package."*"]
 opt-level = 3
 
 [dependencies]
-clap = { version = "4.1", features = ["derive"] }
-console = "0.15.5"
-gifski = "1.10.3"
-image = "0.24.6"
-indicatif = "0.17.3"
-rayon = "1.7.0"
+clap = { version = "4.5", features = ["derive"] }
+console = "0.15.8"
+gifski = "1.14.4"
+image = "0.24.8"
+indicatif = "0.17.8"
+rayon = "1.8.1"
