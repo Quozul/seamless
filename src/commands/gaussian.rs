@@ -2,7 +2,7 @@ use image::{GenericImageView, ImageBuffer, Rgba};
 use std::f32::consts::PI;
 use std::path::PathBuf;
 
-pub fn gaussian(input: String, size: u32, sigma: f32, output_path: PathBuf) {
+pub fn gaussian(input: PathBuf, size: u32, sigma: f32, output_path: PathBuf) {
     let img = image::open(input).unwrap();
     let mut output = ImageBuffer::new(img.width(), img.height());
 
@@ -67,7 +67,7 @@ fn gaussian_kernel(size: u32, sigma: f32) -> Vec<Vec<f32>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::gaussian::gaussian_kernel_a;
+    use crate::commands::gaussian::gaussian_kernel_a;
 
     #[test]
     fn test_gaussian_kernel() {

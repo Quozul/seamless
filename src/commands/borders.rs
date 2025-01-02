@@ -1,4 +1,5 @@
 use image::GenericImageView;
+use std::path::PathBuf;
 
 fn average_color(img: &image::DynamicImage) -> [u8; 3] {
     let mut acc = [0; 4];
@@ -23,7 +24,7 @@ fn color_to_hex(color: [u8; 3]) -> String {
     format!("#{:02X}{:02X}{:02X}", color[0], color[1], color[2])
 }
 
-pub(crate) fn borders(input: String) {
+pub(crate) fn borders(input: PathBuf) {
     let mut img = image::open(input).unwrap();
     let (width, height) = img.dimensions();
     let first_row = img.crop(0, 0, width, 1);

@@ -1,101 +1,17 @@
-mod borders;
+mod cli;
+mod commands;
 mod entry;
-mod gaussian;
 mod gif_progress;
-mod seamless_fast;
 mod similarity;
 
-use crate::borders::borders;
+use crate::cli::{Cli, Commands, CompareAlgorithm};
 use crate::entry::get_image_bytes;
-use crate::gaussian::gaussian;
-use crate::seamless_fast::seamless_fast;
 use crate::similarity::similarity;
-use clap::{arg, Parser, Subcommand, ValueEnum};
+use clap::Parser;
+use commands::borders::borders;
+use commands::gaussian::gaussian;
+use commands::seamless_fast::seamless_fast;
 use std::ffi::OsStr;
-use std::path::PathBuf;
-
-#[derive(Parser)]
-#[command(author, version, about, long_about = None, arg_required_else_help = true)]
-struct Cli {
-    #[command(subcommand)]
-    command: Option<Commands>,
-}
-
-#[derive(ValueEnum, Copy, Clone, Debug, PartialEq, Eq)]
-enum CompareAlgorithm {
-    NormalizedEuclideanDistance,
-}
-
-impl std::fmt::Display for CompareAlgorithm {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.to_possible_value()
-            .expect("no values are skipped")
-            .get_name()
-            .fmt(f)
-    }
-}
-
-#[derive(Subcommand)]
-enum Commands {
-    /// Make a seamless looping gif by finding the most similar frames
-    Fast {
-        /// Where all frames are stored
-        path: PathBuf,
-
-        /// Frames' file extension
-        #[arg(short, long, default_value = "png")]
-        extension: String,
-
-        /// Whether duration is more important than similarity
-        /// A too small value might result in a gif on 1 frame
-        #[arg(short, long, default_value = "0.5")]
-        duration_importance: f32,
-
-        /// Quality of the gif encoding, from 0 to 100
-        #[arg(short, long, default_value = "90", value_parser = clap::value_parser ! (u8).range(0..100))]
-        quality: u8,
-
-        /// Output gif file
-        #[arg(short, long, default_value = "output.gif")]
-        output: String,
-    },
-
-    Compare {
-        /// The first image to compare
-        source: PathBuf,
-
-        /// The second image to compare
-        target: PathBuf,
-
-        /// Algorithm to use
-        #[arg(
-            long,
-            short,
-            default_value_t = CompareAlgorithm::NormalizedEuclideanDistance
-        )]
-        algorithm: CompareAlgorithm,
-    },
-
-    /// Blurs the image using gaussian blur
-    Gaussian {
-        input: String,
-
-        /// Must not be 0
-        #[arg(long, short, default_value = "3")]
-        radius: u32,
-
-        /// Must not be 0
-        #[arg(long, short, default_value = "1.0")]
-        sigma: f32,
-
-        /// Must not be 0
-        #[arg(long, short, default_value = "output.png")]
-        output: PathBuf,
-    },
-
-    /// Gives the average color of the first and last rows
-    Borders { input: String },
-}
 
 fn main() {
     let cli = Cli::parse();

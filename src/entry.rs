@@ -9,7 +9,7 @@ pub(crate) struct Entry {
     pub(crate) path: PathBuf,
     pub(crate) ready: Mutex<bool>,
     pub(crate) cvar: Condvar,
-    pub(crate) data: Mutex<Option<Box<Vec<u8>>>>,
+    pub(crate) data: Mutex<Option<Vec<u8>>>,
 }
 
 impl Entry {
@@ -24,17 +24,12 @@ impl Entry {
     }
 
     pub(crate) fn get_data(self: &Entry) -> Option<Vec<u8>> {
-        let locked_value = self.data.lock().unwrap();
-
-        match &*locked_value {
-            Some(boxed_vec) => Some((**boxed_vec).clone()),
-            None => None,
-        }
+        self.data.lock().ok().and_then(|x| x.clone())
     }
 
     pub(crate) fn load(self: &Entry) {
         let mut file = self.data.lock().unwrap();
-        *file = Some(Box::new(get_image_bytes(self.path.clone())));
+        *file = Some(get_image_bytes(self.path.clone()));
 
         let mut opt = self.ready.lock().unwrap();
         *opt = true;

@@ -23,7 +23,7 @@ pub fn seamless_fast(
     extension: &OsStr,
     duration_importance: f32,
     quality: u8,
-    output_path: String,
+    output_path: PathBuf,
 ) {
     let progress_style = create_style();
     let mut indexing_progress = GifProgress::new(1, String::from("indexing"), 1);
@@ -42,7 +42,7 @@ pub fn seamless_fast(
 
     paths.sort_by(|a, b| a.partial_cmp(b).unwrap());
 
-    indexing_progress.done(&*format!("indexed {} files", paths.len()));
+    indexing_progress.done(&format!("indexed {} files", paths.len()));
 
     let input = paths
         .iter()
@@ -76,7 +76,7 @@ pub fn seamless_fast(
         loading_files_progress
             .lock()
             .unwrap()
-            .done(&*format!("loaded {} files", length));
+            .done(&format!("loaded {} files", length));
     });
 
     let diff_pb = Arc::new(Mutex::new(GifProgress::multi(
@@ -174,7 +174,7 @@ pub fn seamless_fast(
                 .unwrap();
         }
 
-        collect_files_progress.done(&*format!("collected {} frames", frame_count));
+        collect_files_progress.done(&format!("collected {} frames", frame_count));
     });
 
     let file = File::create(output_path).ok().unwrap();

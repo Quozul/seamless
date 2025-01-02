@@ -12,8 +12,8 @@ opt-level = 3
 
 [dependencies]
 clap = { version = "4.5", features = ["derive"] }
-console = "0.15.8"
-gifski = "1.14.4"
-image = "0.24.8"
-indicatif = "0.17.8"
-rayon = "1.8.1"
+console = "0.15.10"
+gifski = "1.32.0"
+image = "0.25.5"
+indicatif = "0.17.9"
+rayon = "1.10.0"
