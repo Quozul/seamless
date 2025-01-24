@@ -25,7 +25,7 @@ pub enum Commands {
         duration_importance: f32,
 
         /// Quality of the gif encoding, from 0 to 100
-        #[arg(short, long, default_value = "90", value_parser = clap::value_parser ! (u8).range(0..100))]
+        #[arg(short, long, default_value = "90", value_parser = clap::value_parser ! (u8).range(0..=100))]
         quality: u8,
 
         /// Output gif file
